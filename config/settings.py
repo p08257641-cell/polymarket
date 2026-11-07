@@ -22,16 +22,16 @@ class Settings:
     CLOB_API_URL: str = os.getenv("CLOB_API_URL", "https://clob.polymarket.com").strip().rstrip("/")
     GAMMA_API_URL: str = os.getenv("GAMMA_API_URL", "https://gamma-api.polymarket.com").strip().rstrip("/")
 
-    # Risk Controls
-    MAX_ORDER_SIZE_USD: float = float(os.getenv("MAX_ORDER_SIZE_USD", "25.0"))
-    MAX_TOTAL_EXPOSURE_USD: float = float(os.getenv("MAX_TOTAL_EXPOSURE_USD", "100.0"))
-    MAX_SLIPPAGE_PERCENT: float = float(os.getenv("MAX_SLIPPAGE_PERCENT", "1.5"))
-    MIN_PROFIT_SPREAD: float = float(os.getenv("MIN_PROFIT_SPREAD", "0.02"))
+    # Risk Controls (Maximized for high-throughput compounding)
+    MAX_ORDER_SIZE_USD: float = float(os.getenv("MAX_ORDER_SIZE_USD", "75.0"))
+    MAX_TOTAL_EXPOSURE_USD: float = float(os.getenv("MAX_TOTAL_EXPOSURE_USD", "850.0"))
+    MAX_SLIPPAGE_PERCENT: float = float(os.getenv("MAX_SLIPPAGE_PERCENT", "2.0"))
+    MIN_PROFIT_SPREAD: float = float(os.getenv("MIN_PROFIT_SPREAD", "0.015"))
 
-    # Monitoring & Loop Frequency
-    LOOP_INTERVAL_SECONDS: int = int(os.getenv("LOOP_INTERVAL_SECONDS", "10"))
+    # Bot Loop Frequency (Fast 5-second cadence)
+    LOOP_INTERVAL_SECONDS: int = int(os.getenv("LOOP_INTERVAL_SECONDS", "5"))
 
-    # Daily Profit Goal: Set to 0.0 for UNLIMITED daily profit (no daily cap)
+    # Daily Profit Goal: 0.0 = UNLIMITED (never stops, compounds maximum profit 24/7)
     DAILY_PROFIT_TARGET_USD: float = float(os.getenv("DAILY_PROFIT_TARGET_USD", "0.0"))
     WEB_SERVER_PORT: int = int(os.getenv("PORT", os.getenv("WEB_SERVER_PORT", "8080")))
     ENABLE_HEALTH_SERVER: bool = os.getenv("ENABLE_HEALTH_SERVER", "true").strip().lower() in ("true", "1", "yes")

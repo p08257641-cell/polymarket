@@ -10,7 +10,7 @@ class RiskManager:
         self.max_order_size_usd = settings.MAX_ORDER_SIZE_USD
         self.max_total_exposure = settings.MAX_TOTAL_EXPOSURE_USD
         self.max_slippage = settings.MAX_SLIPPAGE_PERCENT / 100.0
-        self.cooldown_seconds = 60  # Don't trigger the same rule on the same market within 60s
+        self.cooldown_seconds = 20  # Fast 20s cooldown per token to maximize opportunity capture
         self.last_trade_time: Dict[str, float] = {}
 
     def can_execute_trade(

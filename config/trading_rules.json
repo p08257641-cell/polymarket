@@ -5,12 +5,38 @@
       "name": "BTC 5-Minute Up/Down Sniper",
       "enabled": true,
       "type": "crypto_5m_sniper",
-      "description": "Continuously trades Polymarket's hyper-liquid 5-minute Bitcoin Up or Down markets. Snipes late-candle convergence and fast arbitrage.",
+      "description": "Trades 5-minute Bitcoin Up or Down markets on late-candle convergence and fast arbitrage.",
       "params": {
         "asset": "btc",
-        "min_entry_prob": 0.88,
+        "min_entry_prob": 0.86,
         "max_entry_prob": 0.96,
-        "allocation_usd": 20.0
+        "allocation_usd": 50.0
+      }
+    },
+    {
+      "id": "rule_crypto_5m_eth",
+      "name": "ETH 5-Minute Up/Down Sniper",
+      "enabled": true,
+      "type": "crypto_5m_sniper",
+      "description": "Trades 5-minute Ethereum Up or Down markets on late-candle convergence and fast arbitrage.",
+      "params": {
+        "asset": "eth",
+        "min_entry_prob": 0.86,
+        "max_entry_prob": 0.96,
+        "allocation_usd": 50.0
+      }
+    },
+    {
+      "id": "rule_crypto_5m_sol",
+      "name": "SOL 5-Minute Up/Down Sniper",
+      "enabled": true,
+      "type": "crypto_5m_sniper",
+      "description": "Trades 5-minute Solana Up or Down markets on late-candle convergence and fast arbitrage.",
+      "params": {
+        "asset": "sol",
+        "min_entry_prob": 0.86,
+        "max_entry_prob": 0.96,
+        "allocation_usd": 50.0
       }
     },
     {
@@ -18,15 +44,15 @@
       "name": "Binary & NegRisk Mispricing Arbitrage",
       "enabled": true,
       "type": "binary_arbitrage",
-      "description": "Scans high-volume markets where Sum(Ask_YES + Ask_NO) <= max_combined_cost to lock in guaranteed profit on resolution.",
+      "description": "Scans high-volume markets where Sum(Ask_YES + Ask_NO) <= 0.985 to lock in guaranteed profit on resolution.",
       "market_filter": {
-        "min_volume_24hr": 25000,
-        "max_markets_to_scan": 5
+        "min_volume_24hr": 20000,
+        "max_markets_to_scan": 15
       },
       "params": {
-        "max_combined_cost": 0.98,
-        "min_expected_profit_pct": 2.0,
-        "allocation_per_leg_usd": 25.0
+        "max_combined_cost": 0.985,
+        "min_expected_profit_pct": 1.5,
+        "allocation_per_leg_usd": 40.0
       }
     },
     {
@@ -34,15 +60,15 @@
       "name": "High-Probability Late-Stage Settlement Harvester",
       "enabled": true,
       "type": "high_prob_settlement",
-      "description": "Buys near-certain outcomes (97% - 98.5% probability) in liquid markets to capture a 1.5% to 3.0% yield when the contract resolves at $1.00.",
+      "description": "Buys near-certain outcomes (96% - 98.5% probability) in top 25 liquid markets to capture guaranteed settlement payouts.",
       "market_filter": {
-        "min_volume_24hr": 25000,
-        "max_markets_to_scan": 10
+        "min_volume_24hr": 20000,
+        "max_markets_to_scan": 25
       },
       "params": {
-        "min_entry_price": 0.965,
+        "min_entry_price": 0.960,
         "max_entry_price": 0.985,
-        "allocation_usd": 25.0
+        "allocation_usd": 50.0
       }
     }
   ]

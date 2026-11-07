@@ -121,7 +121,7 @@ class MarketFinder:
             return []
 
     def get_crypto_5m_market(self, asset: str = "btc") -> Optional[Dict[str, Any]]:
-        """Fetch active 5-minute crypto Up/Down market dynamically."""
+        """Fetch active 5-minute crypto Up/Down market dynamically for BTC, ETH, SOL."""
         try:
             import time
             now = int(time.time())
@@ -137,7 +137,7 @@ class MarketFinder:
                     return self.normalize_market(markets[0])
             return None
         except Exception as e:
-            logger.error(f"Error fetching 5m crypto market for {asset}: {e}")
+            logger.debug(f"Error fetching 5m crypto market for {asset}: {e}")
             return None
 
 market_finder = MarketFinder()
