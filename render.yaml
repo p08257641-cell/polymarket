@@ -11,7 +11,7 @@ services:
       - key: DRY_RUN
         value: "true"
       - key: DAILY_PROFIT_TARGET_USD
-        value: "3.0"
+        value: "0.0"
       - key: LOOP_INTERVAL_SECONDS
         value: "10"
       - key: ENABLE_HEALTH_SERVER

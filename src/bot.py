@@ -43,11 +43,12 @@ class PolymarketBot:
         if settings.ENABLE_HEALTH_SERVER:
             start_health_server(self, port=settings.WEB_SERVER_PORT)
 
+        goal_str = "UNLIMITED (No Daily Cap)" if settings.DAILY_PROFIT_TARGET_USD <= 0 else f"${settings.DAILY_PROFIT_TARGET_USD:.2f}/day"
         mode_str = "DRY-RUN (Paper Trading)" if settings.DRY_RUN else "LIVE TRADING (Real Funds)"
         logger.info("=" * 60)
         logger.info("[BOT] Polymarket 24/7 Cloud Trading Bot Started")
         logger.info(f"[MODE] Mode: {mode_str}")
-        logger.info(f"[GOAL] Daily Profit Target: ${settings.DAILY_PROFIT_TARGET_USD:.2f}/day")
+        logger.info(f"[GOAL] Profit Mode: {goal_str}")
         logger.info(f"[TIMER] Loop Frequency: Every {settings.LOOP_INTERVAL_SECONDS} seconds")
         logger.info(f"[RISK] Max Single Order: ${settings.MAX_ORDER_SIZE_USD:.2f}")
         logger.info(f"[RISK] Max Portfolio Exposure: ${settings.MAX_TOTAL_EXPOSURE_USD:.2f}")
@@ -56,7 +57,7 @@ class PolymarketBot:
         notifier.send(
             f"[BOT] Polymarket Cloud Trader Started\n"
             f"Mode: {mode_str}\n"
-            f"Daily Target: ${settings.DAILY_PROFIT_TARGET_USD:.2f}\n"
+            f"Daily Target: {goal_str}\n"
             f"Loop Frequency: {settings.LOOP_INTERVAL_SECONDS}s",
             level="INFO"
         )
@@ -84,15 +85,15 @@ class PolymarketBot:
                     self._log_heartbeat()
                     self.last_heartbeat = now
 
-                # 2. Check if daily profit target already achieved
-                if self.daily_profit_usd >= settings.DAILY_PROFIT_TARGET_USD:
+                # 2. Check if daily profit target already achieved (if a cap is configured)
+                if settings.DAILY_PROFIT_TARGET_USD > 0 and self.daily_profit_usd >= settings.DAILY_PROFIT_TARGET_USD:
                     if not self.daily_target_hit:
                         msg = f"[GOAL HIT] Daily target of ${settings.DAILY_PROFIT_TARGET_USD:.2f} reached! ($ {self.daily_profit_usd:.2f}). Pausing trades until tomorrow."
                         logger.info(msg)
                         notifier.send(msg, level="TRADE")
                         self.daily_target_hit = True
                 else:
-                    # 3. Evaluate all active rules
+                    # 3. Evaluate all active rules continuously
                     rule_engine.evaluate_all()
 
             except KeyboardInterrupt:

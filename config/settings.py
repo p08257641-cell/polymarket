@@ -31,8 +31,8 @@ class Settings:
     # Monitoring & Loop Frequency
     LOOP_INTERVAL_SECONDS: int = int(os.getenv("LOOP_INTERVAL_SECONDS", "10"))
 
-    # Daily Profit Goal & Webhook Server (For 100% Free Cloud Hosting on Koyeb/Render)
-    DAILY_PROFIT_TARGET_USD: float = float(os.getenv("DAILY_PROFIT_TARGET_USD", "3.0"))
+    # Daily Profit Goal: Set to 0.0 for UNLIMITED daily profit (no daily cap)
+    DAILY_PROFIT_TARGET_USD: float = float(os.getenv("DAILY_PROFIT_TARGET_USD", "0.0"))
     WEB_SERVER_PORT: int = int(os.getenv("PORT", os.getenv("WEB_SERVER_PORT", "8080")))
     ENABLE_HEALTH_SERVER: bool = os.getenv("ENABLE_HEALTH_SERVER", "true").strip().lower() in ("true", "1", "yes")
 
