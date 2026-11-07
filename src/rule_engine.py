@@ -282,8 +282,8 @@ class RuleEngine:
         now = int(time.time())
         seconds_left = 300 - (now % 300)
         
-        # We trade when there is between 40s and 180s left in the 5m window
-        if seconds_left < 30 or seconds_left > 200:
+        # Only snipe in the final 30 to 110 seconds when direction is firmly confirmed
+        if seconds_left < 30 or seconds_left > 110:
             return
 
         tokens = market.get("clob_tokens", {})
@@ -292,6 +292,11 @@ class RuleEngine:
 
         if not up_token or not down_token:
             return
+
+        # Crucial Rule: If we already hold a position in this 5m candle, DO NOT enter the other side!
+        positions = polymarket_client.simulated_positions if polymarket_client.dry_run else {}
+        if up_token in positions or down_token in positions:
+            return  # Already trading this 5m candle, wait for it to resolve
 
         book_up = polymarket_client.get_order_book(up_token)
         book_down = polymarket_client.get_order_book(down_token)

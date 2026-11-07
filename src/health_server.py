@@ -23,19 +23,27 @@ class BotStatusHandler(BaseHTTPRequestHandler):
 
             from src.polymarket_client import polymarket_client
 
-            # Calculate detailed portfolio financials
+            # Calculate realistic portfolio financials
             positions = polymarket_client.simulated_positions if settings.DRY_RUN else {}
             invested_usd = 0.0
-            expected_payout_usd = 0.0
             positions_list = []
+            market_payouts = {}  # Map market title -> max payout for mutually exclusive outcomes
 
             for tid, pos in positions.items():
                 cost = round(pos["shares"] * pos["avg_entry"], 2)
                 payout = round(pos["shares"] * 1.0, 2)
                 invested_usd += cost
-                expected_payout_usd += payout
+                title = pos.get("title", tid[:15])
+
+                # Track mutually exclusive outcomes for the same market
+                if title not in market_payouts:
+                    market_payouts[title] = payout
+                else:
+                    # In binary markets, only one side wins
+                    market_payouts[title] = max(market_payouts[title], payout)
+
                 positions_list.append({
-                    "market": pos.get("title", tid[:15]),
+                    "market": title,
                     "outcome": pos.get("outcome", "Yes"),
                     "shares": round(pos["shares"], 2),
                     "entry_price": round(pos["avg_entry"], 3),
@@ -44,6 +52,7 @@ class BotStatusHandler(BaseHTTPRequestHandler):
                     "expected_profit_usd": round(payout - cost, 2)
                 })
 
+            expected_payout_usd = sum(market_payouts.values())
             cash = round(polymarket_client.simulated_balance_usd, 2) if settings.DRY_RUN else "N/A"
             expected_profit_total = round(expected_payout_usd - invested_usd, 2)
             total_portfolio = round(cash + expected_payout_usd, 2) if isinstance(cash, (int, float)) else "N/A"
