@@ -23,13 +23,43 @@ class BotStatusHandler(BaseHTTPRequestHandler):
 
             from src.polymarket_client import polymarket_client
 
+            # Calculate detailed portfolio financials
+            positions = polymarket_client.simulated_positions if settings.DRY_RUN else {}
+            invested_usd = 0.0
+            expected_payout_usd = 0.0
+            positions_list = []
+
+            for tid, pos in positions.items():
+                cost = round(pos["shares"] * pos["avg_entry"], 2)
+                payout = round(pos["shares"] * 1.0, 2)
+                invested_usd += cost
+                expected_payout_usd += payout
+                positions_list.append({
+                    "market": pos.get("title", tid[:15]),
+                    "outcome": pos.get("outcome", "Yes"),
+                    "shares": round(pos["shares"], 2),
+                    "entry_price": round(pos["avg_entry"], 3),
+                    "invested_cost_usd": cost,
+                    "expected_payout_usd": payout,
+                    "expected_profit_usd": round(payout - cost, 2)
+                })
+
+            cash = round(polymarket_client.simulated_balance_usd, 2) if settings.DRY_RUN else "N/A"
+            expected_profit_total = round(expected_payout_usd - invested_usd, 2)
+            total_portfolio = round(cash + expected_payout_usd, 2) if isinstance(cash, (int, float)) else "N/A"
+
             status_payload = {
                 "status": "RUNNING",
                 "service": "Polymarket 24/7 Cloud Trader",
                 "mode": "DRY_RUN" if settings.DRY_RUN else "LIVE",
-                "daily_profit_target_usd": settings.DAILY_PROFIT_TARGET_USD,
-                "cash_usd": polymarket_client.simulated_balance_usd if settings.DRY_RUN else "N/A",
-                "positions_count": len(polymarket_client.simulated_positions) if settings.DRY_RUN else "N/A",
+                "profit_status": f"+${expected_profit_total:.2f} PENDING UPON RESOLUTION",
+                "cash_balance_usd": cash,
+                "invested_in_trades_usd": round(invested_usd, 2),
+                "expected_resolution_payout_usd": round(expected_payout_usd, 2),
+                "expected_net_profit_usd": expected_profit_total,
+                "estimated_total_portfolio_usd": total_portfolio,
+                "open_positions_count": len(positions_list),
+                "open_positions": positions_list,
                 "uptime_iterations": getattr(self.bot_instance, "iteration", 0) if self.bot_instance else 0
             }
             self.wfile.write(json.dumps(status_payload, indent=2).encode("utf-8"))
