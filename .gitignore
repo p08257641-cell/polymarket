@@ -1,0 +1,11 @@
+# Environment variables with private keys
+.env
+
+# Logs and cache
+logs/
+__pycache__/
+*.pyc
+
+# Local runtime data
+.venv/
+venv/

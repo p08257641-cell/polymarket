@@ -1,0 +1,19 @@
+services:
+  polymarket-bot:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: polymarket-24-7-bot
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    volumes:
+      - ../config:/app/config
+      - ../logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"

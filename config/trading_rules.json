@@ -1,0 +1,55 @@
+{
+  "rules": [
+    {
+      "id": "rule_binary_arbitrage",
+      "name": "Binary & NegRisk Mispricing Arbitrage",
+      "enabled": true,
+      "type": "binary_arbitrage",
+      "description": "Scans high-volume markets where Sum(Ask_YES + Ask_NO) <= max_combined_cost to lock in guaranteed profit on resolution.",
+      "market_filter": {
+        "min_volume_24hr": 25000,
+        "max_markets_to_scan": 5
+      },
+      "params": {
+        "max_combined_cost": 0.98,
+        "min_expected_profit_pct": 2.0,
+        "allocation_per_leg_usd": 25.0
+      }
+    },
+    {
+      "id": "rule_high_prob_harvest",
+      "name": "High-Probability Late-Stage Settlement Harvester",
+      "enabled": true,
+      "type": "high_prob_settlement",
+      "description": "Buys near-certain outcomes (97% - 98.5% probability) in liquid markets to capture a 1.5% to 3.0% yield when the contract resolves at $1.00.",
+      "market_filter": {
+        "min_volume_24hr": 25000,
+        "max_markets_to_scan": 10
+      },
+      "params": {
+        "min_entry_price": 0.965,
+        "max_entry_price": 0.985,
+        "allocation_usd": 25.0
+      }
+    },
+    {
+      "id": "rule_dip_buyer",
+      "name": "Dip Buyer for Target Market",
+      "enabled": false,
+      "type": "price_threshold",
+      "description": "Buys YES when market probability falls below entry price, sells when take-profit is reached.",
+      "market_filter": {
+        "slug": "will-jd-vance-win-the-2028-us-presidential-election"
+      },
+      "params": {
+        "outcome": "Yes",
+        "action": "BUY",
+        "trigger_price_below": 0.12,
+        "take_profit_price": 0.25,
+        "stop_loss_price": 0.05,
+        "order_amount_usd": 15.0,
+        "order_type": "GTC"
+      }
+    }
+  ]
+}
