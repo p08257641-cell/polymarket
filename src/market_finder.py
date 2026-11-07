@@ -120,4 +120,24 @@ class MarketFinder:
             logger.error(f"Error fetching top volume markets: {e}")
             return []
 
+    def get_crypto_5m_market(self, asset: str = "btc") -> Optional[Dict[str, Any]]:
+        """Fetch active 5-minute crypto Up/Down market dynamically."""
+        try:
+            import time
+            now = int(time.time())
+            window = now - (now % 300)
+            slug = f"{asset.lower()}-updown-5m-{window}"
+            
+            res = requests.get(f"{self.gamma_url}/events", params={"slug": slug}, headers=self.headers, timeout=5)
+            res.raise_for_status()
+            events = res.json()
+            if events and len(events) > 0:
+                markets = events[0].get("markets", [])
+                if markets:
+                    return self.normalize_market(markets[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching 5m crypto market for {asset}: {e}")
+            return None
+
 market_finder = MarketFinder()

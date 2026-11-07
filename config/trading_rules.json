@@ -1,6 +1,19 @@
 {
   "rules": [
     {
+      "id": "rule_crypto_5m_btc",
+      "name": "BTC 5-Minute Up/Down Sniper",
+      "enabled": true,
+      "type": "crypto_5m_sniper",
+      "description": "Continuously trades Polymarket's hyper-liquid 5-minute Bitcoin Up or Down markets. Snipes late-candle convergence and fast arbitrage.",
+      "params": {
+        "asset": "btc",
+        "min_entry_prob": 0.88,
+        "max_entry_prob": 0.96,
+        "allocation_usd": 20.0
+      }
+    },
+    {
       "id": "rule_binary_arbitrage",
       "name": "Binary & NegRisk Mispricing Arbitrage",
       "enabled": true,
@@ -30,25 +43,6 @@
         "min_entry_price": 0.965,
         "max_entry_price": 0.985,
         "allocation_usd": 25.0
-      }
-    },
-    {
-      "id": "rule_dip_buyer",
-      "name": "Dip Buyer for Target Market",
-      "enabled": false,
-      "type": "price_threshold",
-      "description": "Buys YES when market probability falls below entry price, sells when take-profit is reached.",
-      "market_filter": {
-        "slug": "will-jd-vance-win-the-2028-us-presidential-election"
-      },
-      "params": {
-        "outcome": "Yes",
-        "action": "BUY",
-        "trigger_price_below": 0.12,
-        "take_profit_price": 0.25,
-        "stop_loss_price": 0.05,
-        "order_amount_usd": 15.0,
-        "order_type": "GTC"
       }
     }
   ]

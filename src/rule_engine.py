@@ -41,6 +41,8 @@ class RuleEngine:
                     self._evaluate_binary_arbitrage(rule)
                 elif rule_type == "high_prob_settlement":
                     self._evaluate_high_prob_settlement(rule)
+                elif rule_type == "crypto_5m_sniper":
+                    self._evaluate_crypto_5m(rule)
                 elif rule_type == "price_range_scalp":
                     self._evaluate_price_range_scalp(rule)
                 else:
@@ -258,6 +260,101 @@ class RuleEngine:
                         return  # Execute one high-confidence trade per cycle
                     else:
                         logger.info(f"[SKIP] High-prob trade skipped by risk manager: {reason}")
+
+    def _evaluate_crypto_5m(self, rule: Dict[str, Any]):
+        """
+        Crypto 5-Minute Up/Down Sniper:
+        Trades Polymarket's hyper-liquid 5-minute Bitcoin Up or Down markets.
+        Monitors late-candle probability convergence and spread arbitrage.
+        """
+        import time
+        rule_id = rule["id"]
+        params = rule.get("params", {})
+        asset = params.get("asset", "btc")
+        allocation_usd = params.get("allocation_usd", 20.0)
+        min_prob = params.get("min_entry_prob", 0.88)
+        max_prob = params.get("max_entry_prob", 0.96)
+
+        market = market_finder.get_crypto_5m_market(asset)
+        if not market:
+            return
+
+        now = int(time.time())
+        seconds_left = 300 - (now % 300)
+        
+        # We trade when there is between 40s and 180s left in the 5m window
+        if seconds_left < 30 or seconds_left > 200:
+            return
+
+        tokens = market.get("clob_tokens", {})
+        up_token = tokens.get("Up")
+        down_token = tokens.get("Down")
+
+        if not up_token or not down_token:
+            return
+
+        book_up = polymarket_client.get_order_book(up_token)
+        book_down = polymarket_client.get_order_book(down_token)
+
+        ask_up = book_up["best_ask"]
+        ask_down = book_down["best_ask"]
+
+        # 1. Check Arbitrage on the 5m candle: Ask(Up) + Ask(Down) <= max_cost
+        if 0 < ask_up < 1.0 and 0 < ask_down < 1.0:
+            if (ask_up + ask_down) <= 0.98:
+                logger.info(
+                    f"[CRYPTO 5M ARB] Opportunity in {market['question']}: "
+                    f"Ask Up: ${ask_up:.3f} + Ask Down: ${ask_down:.3f} = ${ask_up+ask_down:.3f}"
+                )
+                polymarket_client.place_order(up_token, "BUY", ask_up, round(allocation_usd/2/ask_up, 2), market["question"], "Up")
+                polymarket_client.place_order(down_token, "BUY", ask_down, round(allocation_usd/2/ask_down, 2), market["question"], "Down")
+                risk_manager.record_trade_execution(rule_id, up_token)
+                return
+
+        # 2. Check Late-Minute Dominance (Leader > 88% with under 3 mins remaining)
+        leader_token = None
+        leader_outcome = None
+        leader_price = 0.0
+
+        if min_prob <= ask_up <= max_prob:
+            leader_token = up_token
+            leader_outcome = "Up"
+            leader_price = ask_up
+        elif min_prob <= ask_down <= max_prob:
+            leader_token = down_token
+            leader_outcome = "Down"
+            leader_price = ask_down
+
+        if leader_token:
+            expected_gain = round(((1.0 - leader_price) / leader_price) * 100, 2)
+            shares = round(allocation_usd / leader_price, 2)
+            logger.info(
+                f"[CRYPTO 5M SNIPE] {market['question']} ({seconds_left}s left)\n"
+                f"   Leader: {leader_outcome} @ ${leader_price:.3f} | Expected 5m Return: +{expected_gain}%"
+            )
+
+            current_exposure = sum(
+                p["shares"] * p["avg_entry"] for p in polymarket_client.simulated_positions.values()
+            ) if polymarket_client.dry_run else 0.0
+
+            allowed, reason = risk_manager.can_execute_trade(
+                rule_id=rule_id,
+                token_id=leader_token,
+                price=leader_price,
+                amount_usd=allocation_usd,
+                current_exposure_usd=current_exposure
+            )
+
+            if allowed:
+                polymarket_client.place_order(
+                    token_id=leader_token,
+                    side="BUY",
+                    price=leader_price,
+                    size=shares,
+                    market_title=market["question"],
+                    outcome=leader_outcome
+                )
+                risk_manager.record_trade_execution(rule_id, leader_token)
 
     def _evaluate_price_range_scalp(self, rule: Dict[str, Any]):
         # Scalping logic for deep-discount markets
