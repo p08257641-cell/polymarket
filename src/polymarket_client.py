@@ -137,6 +137,79 @@ class PolymarketClient:
             logger.error(f"Error fetching order book for {token_id}: {e}")
             return {"token_id": token_id, "best_bid": 0.0, "best_ask": 1.0, "spread": 1.0, "bids": [], "asks": []}
 
+    def auto_settle_simulated_positions(self):
+        """Check all open paper-trading positions, settle closed/expired markets, and credit payouts."""
+        if not self.dry_run or not self.simulated_positions:
+            return
+
+        to_remove = []
+        now = time.time()
+
+        for token_id, pos in list(self.simulated_positions.items()):
+            try:
+                # Check Polymarket Gamma API by clob_token_id
+                url = f"{settings.GAMMA_API_URL}/markets"
+                params = {"clob_token_ids": token_id}
+                res = requests.get(url, params=params, headers=self.headers, timeout=5)
+                if res.status_code != 200:
+                    continue
+
+                markets = res.json()
+                if not markets:
+                    continue
+
+                m = markets[0]
+                is_closed = m.get("closed", False)
+                outcomes = m.get("outcomes", [])
+                prices = m.get("outcomePrices", [])
+
+                if isinstance(outcomes, str):
+                    try: outcomes = json.loads(outcomes)
+                    except Exception: outcomes = ["Yes", "No"]
+                if isinstance(prices, str):
+                    try: prices = json.loads(prices)
+                    except Exception: prices = []
+
+                if is_closed:
+                    my_outcome = pos.get("outcome", "Yes")
+                    shares = pos.get("shares", 0.0)
+                    cost = pos.get("shares", 0.0) * pos.get("avg_entry", 0.0)
+                    payout_per_share = 0.0
+
+                    if my_outcome in outcomes:
+                        idx = outcomes.index(my_outcome)
+                        if idx < len(prices):
+                            try:
+                                payout_per_share = float(prices[idx])
+                            except (ValueError, TypeError):
+                                payout_per_share = 0.0
+
+                    total_payout = round(shares * payout_per_share, 2)
+                    net_profit = round(total_payout - cost, 2)
+
+                    self.simulated_balance_usd += total_payout
+                    to_remove.append(token_id)
+
+                    result_str = f"WIN (+${net_profit:.2f})" if net_profit >= 0 else f"LOSS (-${abs(net_profit):.2f})"
+                    logger.info(
+                        f"[RESOLVED] {pos.get('title')} ({my_outcome})\n"
+                        f"   Result: {result_str} | Payout: ${total_payout:.2f} | Cash Balance: ${self.simulated_balance_usd:.2f}"
+                    )
+                    notifier.send(
+                        f"🏆 [MARKET RESOLVED] {pos.get('title')} ({my_outcome})\n"
+                        f"Result: {result_str} | Payout: ${total_payout:.2f}\n"
+                        f"Cash Balance: ${self.simulated_balance_usd:.2f}",
+                        level="TRADE"
+                    )
+            except Exception as e:
+                logger.debug(f"Error settling position {token_id}: {e}")
+
+        if to_remove:
+            for tid in to_remove:
+                self.simulated_positions.pop(tid, None)
+            self._save_simulated_portfolio()
+            logger.info(f"[SETTLEMENT] Auto-settled {len(to_remove)} positions. Updated Cash: ${self.simulated_balance_usd:.2f}")
+
     def get_midpoint_price(self, token_id: str) -> float:
         """Fetch midpoint price directly from CLOB."""
         try:

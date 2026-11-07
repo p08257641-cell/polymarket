@@ -80,12 +80,15 @@ class PolymarketBot:
                 self.daily_target_hit = False
 
             try:
-                # 1. Periodic Heartbeat (every 10 minutes)
+                # 1. Auto-settle any closed/resolved contracts to collect payouts & cash
+                polymarket_client.auto_settle_simulated_positions()
+
+                # 2. Periodic Heartbeat (every 10 minutes)
                 if now - self.last_heartbeat >= 600:
                     self._log_heartbeat()
                     self.last_heartbeat = now
 
-                # 2. Check if daily profit target already achieved (if a cap is configured)
+                # 3. Check if daily profit target already achieved (if a cap is configured)
                 if settings.DAILY_PROFIT_TARGET_USD > 0 and self.daily_profit_usd >= settings.DAILY_PROFIT_TARGET_USD:
                     if not self.daily_target_hit:
                         msg = f"[GOAL HIT] Daily target of ${settings.DAILY_PROFIT_TARGET_USD:.2f} reached! ($ {self.daily_profit_usd:.2f}). Pausing trades until tomorrow."
